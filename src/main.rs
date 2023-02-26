@@ -7,7 +7,8 @@ use strum_macros::{Display, EnumIter};
 
 static PRINT_TOTAL_VALUES: bool = false;
 
-static GAMES: u64 = 1000000000;
+// static GAMES: u64 = 10000000000;
+static GAMES: u64 = 100000000;
 static THREADS: u64 = 32;
 
 #[derive(Debug, PartialEq, Eq, Hash, EnumIter, Display)]
@@ -187,16 +188,17 @@ fn simulation(keep_ace: bool) -> Vec<HashMap<Hand, (u32, i128)>> {
     results
 }
 
-fn find_biggest_single(face_count: [i8; 6]) -> i8 {
-    for face in (0..face_count.len() - 1).rev() {
+fn find_biggest_single(face_count: [i8; 6]) -> u32 {
+    for face in (0..=face_count.len() - 1).rev() {
         if face_count[face] == 1 {
-            return face as i8;
+            return face as u32;
         }
     }
-    return -1;
+    println!("{:?}", face_count);
+    panic!()
 }
 
-fn get_hand(dice: [i8; 5]) -> (Hand, i8) {
+fn get_hand(dice: [i8; 5]) -> (Hand, u32) {
     let mut face_count: [i8; 6] = [0, 0, 0, 0, 0, 0]; // index represents the face
 
     for face in dice {
@@ -239,21 +241,20 @@ fn get_hand(dice: [i8; 5]) -> (Hand, i8) {
     }
 
     if repoker > -1 {
-        let repoker_value = (repoker + 1) * 5;
+        let repoker_value = ((repoker as u32 + 1) * 5) ^ 5;
         return (Hand::Repoker, repoker_value);
     }
 
     if poker > -1 {
-        // Max value
-        let poker_value = (poker + 1) * 4;
+        let poker_value = ((poker as u32 + 1) * 4) ^ 4;
         let single_value = find_biggest_single(face_count) + 1;
         return (Hand::Poker, poker_value + single_value);
     }
 
     if trio > -1 {
-        let trio_value = (trio + 1) * 3;
+        let trio_value = ((trio as u32 + 1) * 3) ^ 3;
         if pareja1 > -1 {
-            let pareja_value = (pareja1 + 1) * 2;
+            let pareja_value = ((pareja1 as u32 + 1) * 2) ^ 3;
             return (Hand::Full, trio_value + pareja_value);
         } else {
             // trio
@@ -265,12 +266,16 @@ fn get_hand(dice: [i8; 5]) -> (Hand, i8) {
     if pareja1 > -1 {
         if pareja2 > -1 {
             // doble pareja
-            let pareja1_value = (pareja1 + 1) * 2;
-            let pareja2_value = (pareja2 + 1) * 2;
-            return (Hand::DoblePareja, pareja1_value + pareja2_value);
+            let pareja1_value = ((pareja1 as u32 + 1) * 2) ^ 2;
+            let pareja2_value = ((pareja2 as u32 + 1) * 2) ^ 2;
+            let single_value = find_biggest_single(face_count) + 1;
+            return (
+                Hand::DoblePareja,
+                pareja1_value + pareja2_value + single_value,
+            );
         } else {
             // pareja
-            let pareja_value = (pareja1 + 1) * 2;
+            let pareja_value = ((pareja1 as u32 + 1) * 2) ^ 2;
             let single_value = find_biggest_single(face_count) + 1;
             return (Hand::Pareja, pareja_value + single_value);
         }
@@ -278,12 +283,12 @@ fn get_hand(dice: [i8; 5]) -> (Hand, i8) {
 
     if is_escalera_mayor {
         // escalera mayor
-        return (Hand::EscaleraMayor, 20);
+        return (Hand::EscaleraMayor, 1);
     }
 
     if is_escalera_menor {
         // escalera menor
-        return (Hand::EscaleraMenor, 15);
+        return (Hand::EscaleraMenor, 1);
     }
 
     // escalera de violin
