@@ -5,7 +5,9 @@ use std::{collections::HashMap, time::Instant};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
-static GAMES: u64 = 1000000000 as u64;
+static PRINT_TOTAL_VALUES: bool = false;
+
+static GAMES: u64 = 1000000000;
 static THREADS: u64 = 32;
 
 #[derive(Debug, PartialEq, Eq, Hash, EnumIter, Display)]
@@ -21,11 +23,17 @@ enum Hand {
     Repoker,
 }
 
-struct Percentage {
+struct Result {
     hand: Hand,
     normal: f64,
     ace: f64,
     diff: f64,
+    value_normal: i128,
+    value_ace: i128,
+    value_diff: i128,
+    avg_normal: f64,
+    avg_ace: f64,
+    avg_diff: f64,
 }
 
 fn main() {
@@ -33,29 +41,43 @@ fn main() {
     let normal_play = simulation(false);
     let ace_play = simulation(true);
 
-    let mut percentages: Vec<Percentage> = Vec::new();
+    let mut results: Vec<Result> = Vec::new();
 
     for hand in Hand::iter() {
         let mut count_normal: u32 = 0;
         let mut count_ace: u32 = 0;
+        let mut value_normal: i128 = 0;
+        let mut value_ace: i128 = 0;
         for result in normal_play.iter() {
-            let c = result.get(&hand).unwrap();
+            let (c, v) = result.get(&hand).unwrap();
             count_normal = count_normal + c;
+            value_normal = value_normal + v;
         }
         for result in ace_play.iter() {
-            let c = result.get(&hand).unwrap();
+            let (c, v) = result.get(&hand).unwrap();
             count_ace = count_ace + c;
+            value_ace = value_ace + v;
         }
 
         let p_normal = count_normal as f64 / (GAMES * THREADS) as f64 * 100.0;
         let p_ace = count_ace as f64 / (GAMES * THREADS) as f64 * 100.0;
         let p_diff = p_ace - p_normal;
 
-        percentages.push(Percentage {
+        let avg_normal = value_normal as f64 / count_normal as f64;
+        let avg_ace = value_ace as f64 / count_ace as f64;
+        let avg_diff = avg_ace - avg_normal;
+
+        results.push(Result {
             hand,
             normal: p_normal,
             ace: p_ace,
             diff: p_diff,
+            value_normal,
+            value_ace,
+            value_diff: value_ace - value_normal,
+            avg_normal,
+            avg_ace,
+            avg_diff,
         });
     }
 
@@ -67,36 +89,94 @@ fn main() {
     println!("Tiempo de ejecución: {:?}", start.elapsed());
     println!("");
 
-    print!("       ");
-    for p in &percentages {
-        print!(" | {0: <15}", p.hand)
+    print!("                      ");
+    for r in &results {
+        print!(" | {0: <15}", r.hand)
     }
-    print!("\nnormal ");
-    for p in &percentages {
-        print!(" | {0: <15}", format!("{:.4}%", p.normal))
+
+    print!(
+        "\n-------------------------------------------------------------------------------------"
+    );
+    println!(
+        "-------------------------------------------------------------------------------------"
+    );
+
+    print!("normal                ");
+    for r in &results {
+        print!(" | {0: <15}", format!("{:.4}%", r.normal))
     }
-    print!("\nguardar");
-    for p in &percentages {
-        print!(" | {0: <15}", format!("{:.4}%", p.ace))
+    print!("\nguardar               ");
+    for r in &results {
+        print!(" | {0: <15}", format!("{:.4}%", r.ace))
     }
-    print!("\ndiff   ");
-    for p in &percentages {
-        if p.diff > 0.0 {
-            print!(" | +{0: <14}", format!("{:.4}", p.diff))
+    print!("\ndiff                  ");
+    for r in &results {
+        if r.diff > 0.0 {
+            print!(" | +{0: <14}", format!("{:.4}", r.diff))
         } else {
-            print!(" | {0: <15}", format!("{:.4}", p.diff))
+            print!(" | {0: <15}", format!("{:.4}", r.diff))
+        }
+    }
+
+    if PRINT_TOTAL_VALUES {
+        print!(
+        "\n-------------------------------------------------------------------------------------"
+    );
+        println!(
+            "-------------------------------------------------------------------------------------"
+        );
+
+        print!("total value normal    ");
+        for r in &results {
+            print!(" | {0: <15}", format!("{}", r.value_normal))
+        }
+        print!("\ntotal value guardar   ");
+        for r in &results {
+            print!(" | {0: <15}", format!("{}", r.value_ace))
+        }
+        print!("\ntotal value diff      ");
+        for r in &results {
+            if r.value_diff > 0 {
+                print!(" | +{0: <14}", format!("{:.4}", r.value_diff))
+            } else {
+                print!(" | {0: <15}", format!("{:.4}", r.value_diff))
+            }
+        }
+    }
+
+    print!(
+        "\n-------------------------------------------------------------------------------------"
+    );
+    println!(
+        "-------------------------------------------------------------------------------------"
+    );
+
+    print!("avg value normal      ");
+    for r in &results {
+        print!(" | {0: <15}", format!("{:.4}", r.avg_normal))
+    }
+    print!("\navg value guardar     ");
+    for r in &results {
+        print!(" | {0: <15}", format!("{:.4}", r.avg_ace))
+    }
+    print!("\navg value diff        ");
+    for r in &results {
+        if r.avg_diff > 0.0 {
+            print!(" | +{0: <14}", format!("{:.4}", r.avg_diff))
+        } else {
+            print!(" | {0: <15}", format!("{:.4}", r.avg_diff))
         }
     }
 
     println!("\n\n\n\n");
 }
 
-fn simulation(keep_ace: bool) -> Vec<HashMap<Hand, u32>> {
+fn simulation(keep_ace: bool) -> Vec<HashMap<Hand, (u32, i128)>> {
     let mut handles = Vec::new();
     let mut results = Vec::new();
 
-    for _i in 0..THREADS {
-        let h = thread::spawn(move || play(keep_ace));
+    for i in 0..THREADS {
+        let h = thread::spawn(move || play(keep_ace, format!("{}", i)));
         handles.push(h);
     }
 
@@ -107,13 +187,24 @@ fn simulation(keep_ace: bool) -> Vec<HashMap<Hand, u32>> {
     results
 }
 
-fn get_hand(dice: [i8; 5]) -> Hand {
+fn find_biggest_single(face_count: [i8; 6]) -> i8 {
+    for face in (0..face_count.len() - 1).rev() {
+        if face_count[face] == 1 {
+            return face as i8;
+        }
+    }
+    return -1;
+}
+
+fn get_hand(dice: [i8; 5]) -> (Hand, i8) {
     let mut face_count: [i8; 6] = [0, 0, 0, 0, 0, 0]; // index represents the face
 
     for face in dice {
         face_count[face as usize] = face_count[face as usize] + 1;
     }
 
+    let mut repoker: i8 = -1;
+    let mut poker: i8 = -1;
     let mut trio: i8 = -1;
     let mut pareja1: i8 = -1;
     let mut pareja2: i8 = -1;
@@ -123,13 +214,11 @@ fn get_hand(dice: [i8; 5]) -> Hand {
         let count = face_count[face];
         if count == 5 {
             // repoker
-            // return format!("Repoker de {}", get_face_name(face as i8));
-            return Hand::Repoker;
+            repoker = face as i8;
         }
         if count == 4 {
             // poker
-            // return format!("Poker de {}", get_face_name(face as i8));
-            return Hand::Poker;
+            poker = face as i8;
         }
 
         if count == 3 {
@@ -149,49 +238,56 @@ fn get_hand(dice: [i8; 5]) -> Hand {
         }
     }
 
+    if repoker > -1 {
+        let repoker_value = (repoker + 1) * 5;
+        return (Hand::Repoker, repoker_value);
+    }
+
+    if poker > -1 {
+        // Max value
+        let poker_value = (poker + 1) * 4;
+        let single_value = find_biggest_single(face_count) + 1;
+        return (Hand::Poker, poker_value + single_value);
+    }
+
     if trio > -1 {
+        let trio_value = (trio + 1) * 3;
         if pareja1 > -1 {
-            // full
-            // return format!(
-            //     "Full de {} y {}",
-            //     get_face_name(trio as i8),
-            //     get_face_name(pareja1 as i8)
-            // );
-            return Hand::Full;
+            let pareja_value = (pareja1 + 1) * 2;
+            return (Hand::Full, trio_value + pareja_value);
         } else {
             // trio
-            // return format!("Trio de {}", get_face_name(trio as i8));
-            return Hand::Trío;
+            let single_value = find_biggest_single(face_count) + 1;
+            return (Hand::Trío, trio_value + single_value);
         }
     }
 
     if pareja1 > -1 {
         if pareja2 > -1 {
             // doble pareja
-            // return format!(
-            //     "Doble pareja de {} y  {}",
-            //     get_face_name(pareja1 as i8),
-            //     get_face_name(pareja2 as i8)
-            // );
-            return Hand::DoblePareja;
+            let pareja1_value = (pareja1 + 1) * 2;
+            let pareja2_value = (pareja2 + 1) * 2;
+            return (Hand::DoblePareja, pareja1_value + pareja2_value);
         } else {
             // pareja
-            // return format!("Pareja de {}", get_face_name(pareja1 as i8));
-            return Hand::Pareja;
+            let pareja_value = (pareja1 + 1) * 2;
+            let single_value = find_biggest_single(face_count) + 1;
+            return (Hand::Pareja, pareja_value + single_value);
         }
     }
 
     if is_escalera_mayor {
-        // return "Escalera mayor".to_string();
-        return Hand::EscaleraMayor;
+        // escalera mayor
+        return (Hand::EscaleraMayor, 20);
     }
 
     if is_escalera_menor {
-        // return "Escalera menor".to_string();
-        return Hand::EscaleraMenor;
+        // escalera menor
+        return (Hand::EscaleraMenor, 15);
     }
 
-    return Hand::Violín;
+    // escalera de violin
+    return (Hand::Violín, 0);
 }
 
 fn roll() -> i8 {
@@ -199,20 +295,20 @@ fn roll() -> i8 {
     rng.gen_range(0..=5) as i8
 }
 
-fn play(keep_ace: bool) -> HashMap<Hand, u32> {
-    let mut map: HashMap<Hand, u32> = HashMap::from([
-        (Hand::Violín, 0),
-        (Hand::Pareja, 0),
-        (Hand::DoblePareja, 0),
-        (Hand::Trío, 0),
-        (Hand::EscaleraMenor, 0),
-        (Hand::EscaleraMayor, 0),
-        (Hand::Full, 0),
-        (Hand::Poker, 0),
-        (Hand::Repoker, 0),
+fn play(keep_ace: bool, thread: String) -> HashMap<Hand, (u32, i128)> {
+    let mut map: HashMap<Hand, (u32, i128)> = HashMap::from([
+        (Hand::Violín, (0, 0)),
+        (Hand::Pareja, (0, 0)),
+        (Hand::DoblePareja, (0, 0)),
+        (Hand::Trío, (0, 0)),
+        (Hand::EscaleraMenor, (0, 0)),
+        (Hand::EscaleraMayor, (0, 0)),
+        (Hand::Full, (0, 0)),
+        (Hand::Poker, (0, 0)),
+        (Hand::Repoker, (0, 0)),
     ]);
 
-    let mut dice: [i8; 5] = [5, 0, 0, 0, 0];
+    let mut dice: [i8; 5] = [5, 5, 5, 5, 5];
     let mut milestone = 0.0;
 
     let start = if keep_ace { 1 } else { 0 };
@@ -221,14 +317,16 @@ fn play(keep_ace: bool) -> HashMap<Hand, u32> {
             dice[i] = roll();
         }
 
-        let hand = get_hand(dice);
-        let count = map.get(&hand).unwrap() + 1;
-        map.insert(hand, count);
+        let (hand, value) = get_hand(dice);
+
+        let (prev_count, prev_value) = map.get(&hand).unwrap();
+
+        map.insert(hand, (prev_count + 1, prev_value + value as i128));
 
         let prog = i as f64 / GAMES as f64 * 100.0;
         if prog > milestone {
-            print!("\rProgress... {:.2}%", prog);
-            milestone += 5.0;
+            println!("T{} progress... {:.2}%", thread, prog);
+            milestone += 25.0;
         }
     }
 
