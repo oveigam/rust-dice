@@ -45,8 +45,8 @@ fn main() {
     let mut results: Vec<Result> = Vec::new();
 
     for hand in Hand::iter() {
-        let mut count_normal: u32 = 0;
-        let mut count_ace: u32 = 0;
+        let mut count_normal: u64 = 0;
+        let mut count_ace: u64 = 0;
         let mut value_normal: i128 = 0;
         let mut value_ace: i128 = 0;
         for result in normal_play.iter() {
@@ -205,7 +205,7 @@ fn main() {
     println!("\n\n\n\n");
 }
 
-fn simulation(keep_ace: bool) -> Vec<HashMap<Hand, (u32, i128)>> {
+fn simulation(keep_ace: bool) -> Vec<HashMap<Hand, (u64, i128)>> {
     let mut handles = Vec::new();
     let mut results = Vec::new();
 
@@ -333,8 +333,8 @@ fn roll() -> i8 {
     rng.gen_range(0..=5) as i8
 }
 
-fn play(keep_ace: bool, thread: String) -> HashMap<Hand, (u32, i128)> {
-    let mut map: HashMap<Hand, (u32, i128)> = HashMap::from([
+fn play(keep_ace: bool, thread: String) -> HashMap<Hand, (u64, i128)> {
+    let mut map: HashMap<Hand, (u64, i128)> = HashMap::from([
         (Hand::Violín, (0, 0)),
         (Hand::Pareja, (0, 0)),
         (Hand::DoblePareja, (0, 0)),
