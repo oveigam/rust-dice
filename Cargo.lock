@@ -15,6 +15,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "compound_duration"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14c803d816c4ed6d0dadd5b54f7ef4f3761418fe802106b161d77476cc3c664c"
+
+[[package]]
 name = "getrandom"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -111,6 +117,7 @@ dependencies = [
 name = "rust-dice"
 version = "0.1.0"
 dependencies = [
+ "compound_duration",
  "num-format",
  "rand",
  "strum",

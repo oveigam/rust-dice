@@ -1,3 +1,4 @@
+use compound_duration::format_dhms;
 use num_format::{Locale, ToFormattedString};
 use rand::Rng;
 use std::thread;
@@ -86,8 +87,10 @@ fn main() {
         "Partidas simuladas:  {}",
         (GAMES * THREADS).to_formatted_string(&Locale::fr)
     );
-    println!("Tiempo de ejecución: {:?}", start.elapsed());
-    println!("");
+    println!(
+        "Tiempo de ejecución: {:?}",
+        format_dhms(start.elapsed().as_secs())
+    );
 
     print!("                      ");
     for r in &results {
