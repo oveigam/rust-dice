@@ -61,6 +61,7 @@ pub fn simulation() {
         format_dhms(start.elapsed().as_secs())
     );
 
+    println!();
     print!("                      ");
     for r in &results {
         print!(" | {0: <15}", r.hand)
