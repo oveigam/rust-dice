@@ -6,8 +6,6 @@ use std::{collections::HashMap, time::Instant};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
-static PRINT_TOTAL_VALUES: bool = false;
-
 static GAMES: u64 = 10000000000;
 static THREADS: u64 = 32;
 
@@ -118,32 +116,6 @@ fn main() {
             print!(" | +{0: <14}", format!("{:.4}", r.diff))
         } else {
             print!(" | {0: <15}", format!("{:.4}", r.diff))
-        }
-    }
-
-    if PRINT_TOTAL_VALUES {
-        print!(
-        "\n-------------------------------------------------------------------------------------"
-    );
-        println!(
-            "-------------------------------------------------------------------------------------"
-        );
-
-        print!("total value normal    ");
-        for r in &results {
-            print!(" | {0: <15}", format!("{}", r.value_normal))
-        }
-        print!("\ntotal value guardar   ");
-        for r in &results {
-            print!(" | {0: <15}", format!("{}", r.value_ace))
-        }
-        print!("\ntotal value diff      ");
-        for r in &results {
-            if r.value_diff > 0 {
-                print!(" | +{0: <14}", format!("{:.4}", r.value_diff))
-            } else {
-                print!(" | {0: <15}", format!("{:.4}", r.value_diff))
-            }
         }
     }
 
