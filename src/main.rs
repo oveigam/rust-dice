@@ -7,8 +7,7 @@ use strum_macros::{Display, EnumIter};
 
 static PRINT_TOTAL_VALUES: bool = false;
 
-// static GAMES: u64 = 10000000000;
-static GAMES: u64 = 100000000;
+static GAMES: u64 = 10000000000;
 static THREADS: u64 = 32;
 
 #[derive(Debug, PartialEq, Eq, Hash, EnumIter, Display)]
@@ -152,6 +151,37 @@ fn main() {
         "-------------------------------------------------------------------------------------"
     );
 
+    print!("min/max avg           ");
+    print!(" | {: <15}", format!("{}/{}", 0, 0));
+    // Pareja
+    print!(" | {: <15}", format!("{}/{}", 1 * 20 + 2, 6 * 20 + 5));
+    // Doble pareja
+    print!(
+        " | {: <15}",
+        format!("{}/{}", 1 * 20 + 2 * 20 + 3, 6 * 20 + 5 * 20 + 4)
+    );
+    // trio
+    print!(" | {: <15}", format!("{}/{}", 1 * 300 + 2, 6 * 300 + 5));
+    //escaleras
+    print!(" | {: <15}", format!("{}/{}", 1, 1));
+    print!(" | {: <15}", format!("{}/{}", 1, 1));
+    // full
+    print!(
+        " | {: <15}",
+        format!("{}/{}", 1 * 300 + 2 * 20, 6 * 300 + 5 * 20)
+    );
+    // poker
+    print!(" | {: <15}", format!("{}/{}", 1 * 4000 + 2, 6 * 4000 + 5));
+    // repoker
+    print!(" | {: <15}", format!("{}/{}", 1 * 50000, 6 * 50000));
+
+    print!(
+        "\n-------------------------------------------------------------------------------------"
+    );
+    println!(
+        "-------------------------------------------------------------------------------------"
+    );
+
     print!("avg value normal      ");
     for r in &results {
         print!(" | {0: <15}", format!("{:.4}", r.avg_normal))
@@ -241,20 +271,20 @@ fn get_hand(dice: [i8; 5]) -> (Hand, u32) {
     }
 
     if repoker > -1 {
-        let repoker_value = ((repoker as u32 + 1) * 5) ^ 5;
+        let repoker_value = (repoker as u32 + 1) * 50000;
         return (Hand::Repoker, repoker_value);
     }
 
     if poker > -1 {
-        let poker_value = ((poker as u32 + 1) * 4) ^ 4;
+        let poker_value = (poker as u32 + 1) * 4000;
         let single_value = find_biggest_single(face_count) + 1;
         return (Hand::Poker, poker_value + single_value);
     }
 
     if trio > -1 {
-        let trio_value = ((trio as u32 + 1) * 3) ^ 3;
+        let trio_value = (trio as u32 + 1) * 300;
         if pareja1 > -1 {
-            let pareja_value = ((pareja1 as u32 + 1) * 2) ^ 3;
+            let pareja_value = (pareja1 as u32 + 1) * 20;
             return (Hand::Full, trio_value + pareja_value);
         } else {
             // trio
@@ -266,8 +296,8 @@ fn get_hand(dice: [i8; 5]) -> (Hand, u32) {
     if pareja1 > -1 {
         if pareja2 > -1 {
             // doble pareja
-            let pareja1_value = ((pareja1 as u32 + 1) * 2) ^ 2;
-            let pareja2_value = ((pareja2 as u32 + 1) * 2) ^ 2;
+            let pareja1_value = (pareja1 as u32 + 1) * 20;
+            let pareja2_value = (pareja2 as u32 + 1) * 20;
             let single_value = find_biggest_single(face_count) + 1;
             return (
                 Hand::DoblePareja,
@@ -275,7 +305,7 @@ fn get_hand(dice: [i8; 5]) -> (Hand, u32) {
             );
         } else {
             // pareja
-            let pareja_value = ((pareja1 as u32 + 1) * 2) ^ 2;
+            let pareja_value = (pareja1 as u32 + 1) * 20;
             let single_value = find_biggest_single(face_count) + 1;
             return (Hand::Pareja, pareja_value + single_value);
         }
